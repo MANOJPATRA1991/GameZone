@@ -72,6 +72,12 @@ class CreateForm(FlaskForm):
                                     ('5', 'Simulation'),
                                     ('6', 'Sports'),
                                     ('7', 'Strategy')])
+
+    platform = SelectField('Platform',
+                           choices=[('Playstation', 'Playstation'),
+                                    ('XBox', 'XBox'),
+                                    ('PC', 'PC')])
+
     year = TextField('Release Year')
     submit = SubmitField("Create")
 
@@ -494,6 +500,26 @@ def edit_game(game_id):
                                game=edited_game)
 
 
+@app.route('/games/<int:game_id>/delete', methods=['GET', 'POST'])
+def delete_game(game_id):
+    form = CreateForm()
+    if 'username' not in login_session:
+        return redirect('/login')
+    game = session.query(Games).filter_by(id=game_id).one()
+    if game.user_id != login_session['user_id']:
+        return "<script>function myFunction() {" \
+               "alert('You are not authorized to delete" \
+               "this item from this restaurant.');}</script>" \
+               "<body onload='myFunction()'>"
+    if request.method == 'POST':
+        session.delete(game)
+        session.commit()
+        flash('Game Data Successfully Deleted')
+        return redirect(url_for('show_games', game_id=game_id, category_id=game.category_id))
+    else:
+        return render_template('delete_game.html', game=game, form=form)
+
+
 # ------------------------------------------------------------
 #                       HELPER METHODS
 # ------------------------------------------------------------
@@ -538,6 +564,7 @@ def save_image(img, path):
             app.config['UPLOAD_IMAGES_FOLDER'], image_file
         ))
     img = normalize(attr.filename)
+
 
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):

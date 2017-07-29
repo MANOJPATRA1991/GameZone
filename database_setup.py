@@ -88,6 +88,7 @@ class Games(Base):
     image_path = Column(String(500))
     banner_path = Column(String(500))
     video_path = Column(String(500))
+    platform = Column(String(100))
     created = Column(DateTime, default=func.now())
     category_id = Column(Integer, ForeignKey('category.id'))
     category = relationship(Category)
@@ -100,6 +101,7 @@ class Games(Base):
         return {
             'name': self.name,
             'year': self.year,
+            'platform': self.platform,
             'description': self.description,
             'image_path': self.image_path,
             'banner_path': self.banner_path,
