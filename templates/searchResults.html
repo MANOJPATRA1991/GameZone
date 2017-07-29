@@ -1,0 +1,22 @@
+{% extends "main.html" %}
+{% block content %}
+{% include "header.html" %}
+<div class="container">
+	<div class="row">
+	{% for i in items %}
+		<div class="col-md-4">
+			<div class="thumbnail">
+				<img src="{{i.venue.photos.groups[0].items()[1][1][0].prefix + '300x300' + i.venue.photos.groups[0].items()[1][1][0].suffix}}">
+			</div>
+			<div class="caption">
+				<h2>{{i.venue.name}}</h2>
+			    <a href="{{i.venue.url}}">{{i.venue.url}}</a>
+			    <p>{{i.venue.categories[0].name}}</p>
+			    <p>{{i.venue.ratingSignals}} reviews</p>
+			</div>
+		</div>
+	{% endfor %}
+
+	</div>
+</div>
+{% endblock %}
