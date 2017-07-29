@@ -5,7 +5,6 @@ import requests
 import random
 import string
 import unicodedata
-from login import showLogin, gconnect, gdisconnect, fbconnect, fbdisconnect, disconnect
 
 from flask import Flask, g
 from flask import session as login_session
@@ -17,7 +16,7 @@ from flask_uploads import UploadSet, IMAGES, configure_uploads
 from flask_wtf.file import FileField, FileAllowed, FileRequired, DataRequired
 from werkzeug.utils import secure_filename
 
-from wtforms import (StringField, DateField, TextField, SubmitField, SelectField, TextAreaField)
+from wtforms import (StringField, TextField, SubmitField, SelectField, TextAreaField)
 from wtforms import validators, ValidationError
 
 from sqlalchemy import create_engine, update, asc
@@ -37,11 +36,8 @@ app = Flask(__name__)
 # folder to store the uploaded files
 app.config['UPLOAD_IMAGES_FOLDER'] = 'uploads/'
 # extensions allowed for uploading to prevent XSS(Cross-Site-Scripting)
-ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
-
-# current working directory
-WORKING_DIRECTORY = os.path.dirname(os.path.realpath('__file__'))
-
+app.config['ALLOWED_EXTENSIONS'] = set(['png', 'jpg', 'jpeg'])
+# configure_uploads(app, (images))
 engine = create_engine('sqlite:///catalog.db')
 
 Base.metadata.bind = engine
@@ -56,11 +52,9 @@ class CreateForm(FlaskForm):
     name = TextField("Name", validators=[DataRequired()])
     description = TextAreaField("Description", validators=[DataRequired()])
     image = FileField('Image', validators=[
-        FileRequired()
-    ])
-    banner = FileField('Image', validators=[
-        FileRequired()
-    ])
+                        FileRequired()
+                    ])
+
     youtubeVideoURL = TextField("Trailer on Youtube",
                                     validators=[DataRequired()])
     category = SelectField('Genre',
@@ -71,7 +65,7 @@ class CreateForm(FlaskForm):
                                  ('5', 'Simulation'),
                                  ('6', 'Sports'),
                                  ('7', 'Strategy')])
-    year = TextField('Release Year')
+
     submit = SubmitField("Create")
 
 
@@ -350,153 +344,3 @@ def disconnect():
     else:
         flash("You are not logged in to begin with.")
         return redirect(url_for('show_categories'))
-
-# ------------------------------------------------------------
-#                       REST APIs FOR APP
-# ------------------------------------------------------------
-
-# list all categories available
-@app.route('/category/JSON')
-def category_json():
-    categories = session.query(Category).all()
-    return jsonify(categories=[c.serialize for c in categories])
-
-
-# list games belonging to a particular category in json format
-@app.route('/category/<int:category_id>/games/JSON')
-def games_by_category_json(category_id):
-    games = session.query(Games).filter_by(
-        category_id=category_id).all()
-    return jsonify(Games=[game.serialize for game in games])
-
-
-# list a particular game based on a id in json format
-@app.route('/category/<int:category_id>/games/<int:game_id>/JSON')
-def game_json(category_id, game_id):
-    game = session.query(Games).filter_by(id=game_id).one()
-    return jsonify(Games=game.serialize)
-
-
-# show all categories
-@app.route('/')
-@app.route('/category/')
-def show_categories():
-    categories = session.query(Category).order_by(asc(Category.name))
-    return render_template('categories.html', categories=categories)
-
-
-# show games for a particular category
-@app.route('/category/<int:category_id>/')
-@app.route('/category/<int:category_id>/games/')
-def show_games(category_id):
-    category = session.query(Category).filter_by(id=category_id).one()
-    games = session.query(Games).filter_by(category_id=category_id).all()
-    return render_template('games.html',
-                           category=category,
-                           games=games)
-
-# Create a new game item
-@app.route('/category/<int:category_id>/games/new/', methods=['GET', 'POST'])
-def new_game(category_id):
-    form = CreateForm()
-    if 'username' not in login_session:
-        return redirect('/login')
-    if request.method == 'POST':
-        if form.validate() is False:
-            flash('All fields are required.')
-        name = normalize(form.name.data)
-        game = session.query(Games).filter_by(name=name).one()
-        if(game):
-            flash('Game already exists in the database')
-        year = normalize(form.year.data)
-        description = normalize(form.description.data)
-
-        image_path = form.image.data
-        if image_path and allowed_file(image_path.filename):
-            image_file = secure_filename(image_path.filename)
-            image_path.save(os.path.join(
-                app.config['UPLOAD_IMAGES_FOLDER'], image_file
-            ))
-
-        banner_path = form.banner.data
-        if banner_path and allowed_file(banner_path.filename):
-            banner_file = secure_filename(banner_path.filename)
-            banner_path.save(os.path.join(
-                app.config['UPLOAD_IMAGES_FOLDER'], banner_file
-            ))
-
-        video_path = unicodedata.normalize(
-            'NFKD',
-            form.youtubeVideoURL.data).encode('ascii', 'ignore')
-        category_id = unicodedata.normalize(
-            'NFKD',
-            form.category.data).encode('ascii', 'ignore')
-        new_game = Games(name=name,
-                         year=year,
-                         description=description,
-                         image_path=os.path.join(WORKING_DIRECTORY,
-                                                 normalize(image_path.filename)),
-                         banner_path=os.path.join(WORKING_DIRECTORY,
-                                                  normalize(banner_path.filename)),
-                         video_path=video_path,
-                         category_id=category_id,
-                         user_id=1)
-        print(new_game.name)
-        session.add(new_game)
-        session.commit()
-        flash('New game data for ' + new_game.name + ' created!!')
-        return redirect(url_for('show_categories'))
-    else:
-        return render_template('new_game.html',
-                               category_id=category_id,
-                               form=form)
-
-
-# @app.route('/category/<int:category_id>/games/<int:game_id>/edit', methods=['GET', 'POST'])
-# def edit_game_item(category_id, game_id)
-
-# ------------------------------------------------------------
-#                       HELPER METHODS
-# ------------------------------------------------------------
-def get_user_id(email):
-    try:
-        user = session.query(User).filter_by(email=email).one()
-        return user.id
-    except:
-        return None
-
-
-def get_user_info(user_id):
-    user = session.query(User).filter_by(id=user_id).one()
-    return user
-
-
-def create_user(login_session):
-    new_user = User(name=login_session['username'],
-                    email=login_session['email'],
-                    picture=login_session['picture'])
-    session.add(new_user)
-    session.commit()
-    user = session.query(User).filter_by(email=login_session['email']).one()
-    return user.id
-
-
-def normalize(val):
-    return unicodedata.normalize(
-        'NFKD', val).encode('ascii', 'ignore')
-
-
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# run if execution is through a python interpreter
-if __name__ == "__main__":
-    app.secret_key = 'super_secret_key'
-    # to enable just the interactive debugger without the code reloading
-    app.debug = True
-    # Runs the application on a local development server.
-    # Do not use run() in a production setting.
-    # Defaults to 127.0.0.1
-    # Set this to 0.0.0.0 to have the server available externally as well.
-    app.run(host='0.0.0.0', port=5000)

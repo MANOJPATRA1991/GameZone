@@ -1,16 +1,14 @@
 {% extends "main.html" %}
 {% block content %}
 {% include "header.html" %}
-		<div class="category mdl-grid">
+<div class="container">
+	<div class="row">
 		{% for c in categories %}
-		<div class="mdl-cell mdl-cell--4-col mdl-card mdl-shadow--2dp">
-		  <div class="mdl-card__title">
-		    <a href="#"><h2 class="mdl-card__title-text">{{ c.name }}</h2></a>
-		  </div>
+		<div class="col-md-4">
+		    <a href="#"><h2 class="">{{ c.name }}</h2></a>
 		</div>
 		{% endfor %}
 		</div>
 	</div>
-  </main>
 </div>
 {% endblock %}

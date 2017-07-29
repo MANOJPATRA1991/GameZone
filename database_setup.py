@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, DateTime, func
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, DateTime, func, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
@@ -83,11 +83,11 @@ class Games(Base):
     __tablename__ = 'games'
     id = Column(Integer, primary_key=True)
     name = Column(String(250))
-    year = Column(Integer)
-    description = Column(String(250))
-    image_path = Column(String(250))
-    banner_path = Column(String(250))
-    video_path = Column(String(250))
+    year = Column(String(10))
+    description = Column(String(4096))
+    image_path = Column(String(500))
+    banner_path = Column(String(500))
+    video_path = Column(String(500))
     created = Column(DateTime, default=func.now())
     category_id = Column(Integer, ForeignKey('category.id'))
     category = relationship(Category)
@@ -98,16 +98,22 @@ class Games(Base):
     @property
     def serialize(self):
         return {
-            'name': self.venue_name,
+            'name': self.name,
             'year': self.year,
             'description': self.description,
             'image_path': self.image_path,
+            'banner_path': self.banner_path,
             'video_path': self.video_path,
             'created': self.created,
-            'category': self.venue_category,
+            'category': self.category_id,
             'id': self.id,
             'user_id': self.user_id
         }
+
+    @staticmethod
+    def allowed_file(self, filename):
+        return '.' in filename and \
+               filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 engine = create_engine('sqlite:///catalog.db')
