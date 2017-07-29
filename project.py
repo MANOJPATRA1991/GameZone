@@ -35,7 +35,8 @@ auth = HTTPBasicAuth()
 app = Flask(__name__)
 
 # folder to store the uploaded files
-app.config['UPLOAD_IMAGES_FOLDER'] = 'uploads/'
+UPLOAD_IMAGES_FOLDER = 'uploads/'
+app.config['UPLOAD_IMAGES_FOLDER'] = UPLOAD_IMAGES_FOLDER
 # extensions allowed for uploading to prevent XSS(Cross-Site-Scripting)
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
@@ -62,15 +63,15 @@ class CreateForm(FlaskForm):
         FileRequired()
     ])
     youtubeVideoURL = TextField("Trailer on Youtube",
-                                    validators=[DataRequired()])
+                                validators=[DataRequired()])
     category = SelectField('Genre',
-                        choices=[('1', 'Action'),
-                                 ('2', 'Action-Adventure'),
-                                 ('3', 'Adventure'),
-                                 ('4', 'Role-playing'),
-                                 ('5', 'Simulation'),
-                                 ('6', 'Sports'),
-                                 ('7', 'Strategy')])
+                           choices=[('1', 'Action'),
+                                    ('2', 'Action-Adventure'),
+                                    ('3', 'Adventure'),
+                                    ('4', 'Role-playing'),
+                                    ('5', 'Simulation'),
+                                    ('6', 'Sports'),
+                                    ('7', 'Strategy')])
     year = TextField('Release Year')
     submit = SubmitField("Create")
 
@@ -108,7 +109,6 @@ def showLogin():
 # login with google
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
-
     # check for cross-site request forgery
     if request.args.get('state') != login_session['state']:
         # creates a response with a 401 error code
@@ -297,7 +297,7 @@ def fbconnect():
     login_session['picture'] = data["data"]["url"]
 
     # see if user exists, if no, then create a new user
-    user_id=get_user_id(login_session['email'])
+    user_id = get_user_id(login_session['email'])
     if not user_id:
         user_id = create_user(login_session)
     login_session['user_id'] = user_id
@@ -351,6 +351,7 @@ def disconnect():
         flash("You are not logged in to begin with.")
         return redirect(url_for('show_categories'))
 
+
 # ------------------------------------------------------------
 #                       REST APIs FOR APP
 # ------------------------------------------------------------
@@ -395,9 +396,10 @@ def show_games(category_id):
                            category=category,
                            games=games)
 
+
 # Create a new game item
-@app.route('/category/<int:category_id>/games/new/', methods=['GET', 'POST'])
-def new_game(category_id):
+@app.route('/games/new/', methods=['GET', 'POST'])
+def new_game():
     form = CreateForm()
     if 'username' not in login_session:
         return redirect('/login')
@@ -405,8 +407,8 @@ def new_game(category_id):
         if form.validate() is False:
             flash('All fields are required.')
         name = normalize(form.name.data)
-        game = session.query(Games).filter_by(name=name).one()
-        if(game):
+        game = session.query(Games).filter_by(name=name).first()
+        if game is None:
             flash('Game already exists in the database')
         year = normalize(form.year.data)
         description = normalize(form.description.data)
@@ -425,19 +427,13 @@ def new_game(category_id):
                 app.config['UPLOAD_IMAGES_FOLDER'], banner_file
             ))
 
-        video_path = unicodedata.normalize(
-            'NFKD',
-            form.youtubeVideoURL.data).encode('ascii', 'ignore')
-        category_id = unicodedata.normalize(
-            'NFKD',
-            form.category.data).encode('ascii', 'ignore')
+        video_path = normalize(form.youtubeVideoURL.data)
+        category_id = normalize(form.category.data)
         new_game = Games(name=name,
                          year=year,
                          description=description,
-                         image_path=os.path.join(WORKING_DIRECTORY,
-                                                 normalize(image_path.filename)),
-                         banner_path=os.path.join(WORKING_DIRECTORY,
-                                                  normalize(banner_path.filename)),
+                         image_path=normalize(image_path.filename),
+                         banner_path=normalize(banner_path.filename),
                          video_path=video_path,
                          category_id=category_id,
                          user_id=1)
@@ -445,15 +441,58 @@ def new_game(category_id):
         session.add(new_game)
         session.commit()
         flash('New game data for ' + new_game.name + ' created!!')
-        return redirect(url_for('show_categories'))
+        return redirect(url_for('show_games', game_id=new_game.id, category_id=new_game.category_id))
     else:
         return render_template('new_game.html',
-                               category_id=category_id,
                                form=form)
 
 
-# @app.route('/category/<int:category_id>/games/<int:game_id>/edit', methods=['GET', 'POST'])
-# def edit_game_item(category_id, game_id)
+@app.route('/games/<int:game_id>/edit', methods=['GET', 'POST'])
+def edit_game(game_id):
+    if 'username' not in login_session:
+        return redirect('/login')
+    edited_game = session.query(Games).filter_by(id=game_id).one()
+    form = CreateForm(category=edited_game.category_id)
+    edited_game_category = session.query(Category).filter_by(id=edited_game.category_id).one()
+    if request.method == 'POST':
+        if form.validate() is False:
+            flash('All fields are required.')
+        if form.name.data:
+            edited_game.name = normalize(form.name.data)
+        if form.description.data:
+            edited_game.description = normalize(form.description.data)
+        if form.year.data:
+            edited_game.year = normalize(form.year.data)
+        if form.image.data:
+            image_path = form.image.data
+            if image_path and allowed_file(image_path.filename):
+                image_file = secure_filename(image_path.filename)
+                image_path.save(os.path.join(
+                    app.config['UPLOAD_IMAGES_FOLDER'], image_file
+                ))
+            edited_game.image_path = normalize(image_path.filename)
+        if form.banner.data:
+            banner_path = form.banner.data
+            if banner_path and allowed_file(banner_path.filename):
+                banner_file = secure_filename(banner_path.filename)
+                banner_path.save(os.path.join(
+                    app.config['UPLOAD_IMAGES_FOLDER'], banner_file
+                ))
+            edited_game.banner_path = normalize(banner_path.filename)
+        if form.youtubeVideoURL.data:
+            edited_game.video_path = normalize(form.youtubeVideoURL.data)
+        if form.category.data:
+            edited_game.category_id = normalize(form.category.data)
+        print(edited_game.name)
+        session.add(edited_game)
+        session.commit()
+        flash('Game data for ' + edited_game.name + ' edited and saved successfully!!')
+        return redirect(url_for('show_games', game_id=edited_game.id, category_id=edited_game.category_id))
+    else:
+        return render_template('edit_game.html',
+                               form=form,
+                               game=edited_game)
+
 
 # ------------------------------------------------------------
 #                       HELPER METHODS
@@ -489,6 +528,21 @@ def normalize(val):
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def save_image(img, path):
+    attr = path
+    if attr and allowed_file(attr.filename):
+        image_file = secure_filename(attr.filename)
+        attr.save(os.path.join(
+            app.config['UPLOAD_IMAGES_FOLDER'], image_file
+        ))
+    img = normalize(attr.filename)
+
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_IMAGES_FOLDER'],
+                               filename)
 
 # run if execution is through a python interpreter
 if __name__ == "__main__":

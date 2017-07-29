@@ -7,19 +7,20 @@
 		<div class="container">
 			<div class="new_game flex-row">
 				<div class="col-xs-12">
-					<form action="{{url_for('new_game')}}" method="POST" enctype="multipart/form-data">
+					<form action="{{url_for('edit_game', game_id=game.id)}}" method="POST" enctype="multipart/form-data">
 						<div class="form-group">
 							{{form.name.label}}
-							{{form.name(class_= "form-control")}}
+							{{form.name(class_= "form-control", placeholder=game.name)}}
 						</div>
 						<div class="form-group">
 							{{form.year.label}}
-							{{form.year(class_="form-control")}}
+							{{form.year(class_="form-control", placeholder=game.year)}}
 						</div>
 						<div class="form-group">
 							<div class="fileinput fileinput-new" data-provides="fileinput">
+                              <img src="{{ url_for('uploaded_file', filename = game.image_path) }}" style="max-width: 200px; max-height: 150px;">
 							  <div class="fileinput-new thumbnail" style="width: 200px; height: 150px;">
-								<img data-src="holder.js/100%x100%" alt="...">
+								<img data-src="{{ url_for('uploaded_file', filename = game.image_path) }}" alt="">
 							  </div>
 							  <div class="fileinput-preview fileinput-exists thumbnail" style="max-width: 200px; max-height: 150px;"></div>
 							  <div>
@@ -30,8 +31,9 @@
 						</div>
 						<div class="form-group">
 							<div class="fileinput fileinput-new" data-provides="fileinput">
+                                <img src="{{ url_for('uploaded_file', filename = game.banner_path) }}" style="max-width: 300px; max-height: 150px;">
 							  <div class="fileinput-new thumbnail" style="width: 300px; height: 150px;">
-								<img data-src="holder.js/100%x100%" alt="...">
+								<img data-src="{{ url_for('uploaded_file', filename = game.banner_path) }}" alt="">
 							  </div>
 							  <div class="fileinput-preview fileinput-exists thumbnail" style="max-width: 200px; max-height: 150px;"></div>
 							  <div>
@@ -42,7 +44,7 @@
 						</div>
 						<div class="form-group">
 							{{form.youtubeVideoURL.label}}
-							{{form.youtubeVideoURL(class_= "form-control")}}
+							{{form.youtubeVideoURL(class_= "form-control", placeholder=game.video_path)}}
 						</div>
 
 						<div class="form-group">
@@ -52,7 +54,7 @@
 						<div class="right-side">
 							<div class="form-group">
 								{{form.description.label}}
-								{{form.description(class_= "form-control", rows='10', cols='300')}}
+								{{form.description(class_= "form-control", rows='10', cols='300', placeholder=game.description)}}
 							</div>
 						</div>
 

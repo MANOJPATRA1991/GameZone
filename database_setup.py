@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, DateTime, func, Date
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
@@ -110,10 +110,6 @@ class Games(Base):
             'user_id': self.user_id
         }
 
-    @staticmethod
-    def allowed_file(self, filename):
-        return '.' in filename and \
-               filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 engine = create_engine('sqlite:///catalog.db')
