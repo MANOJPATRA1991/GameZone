@@ -24,7 +24,7 @@ from wtforms import (DateField, TextField,
 
 from wtforms import validators, ValidationError
 
-from sqlalchemy import create_engine, asc
+from sqlalchemy import create_engine, asc, func
 from sqlalchemy.orm import sessionmaker
 
 from database_setup import Base, User, Category, Games
@@ -420,10 +420,12 @@ def show_games():
 @app.route('/games/<int:game_id>')
 def show_game(game_id):
     game = session.query(Games).filter_by(id=game_id).one()
+    date = game.release_date.date().strftime("%d, %B %Y")
     category = session.query(Category).filter_by(id=game.category_id).one()
     return render_template('game_page.html',
                            game=game,
                            category=category,
+                           date=date,
                            embed_link=embed_link(game.video_path))
 
 
@@ -490,6 +492,7 @@ def edit_game(game_id):
     if 'username' not in login_session:
         return redirect('/login')
     edited_game = session.query(Games).filter_by(id=game_id).one()
+    date_to_edit = edited_game.release_date.date().strftime("%d/%m/%y")
     form = CreateForm(category=edited_game.category_id)
     if edited_game.user_id == login_session['user_id']:
         if request.method == 'POST':
@@ -536,6 +539,7 @@ def edit_game(game_id):
         else:
             return render_template('edit_game.html',
                                    form=form,
+                                   date_to_edit=date_to_edit,
                                    game=edited_game)
     else:
         response = make_response(json.dumps('You are not authorized \
@@ -638,5 +642,5 @@ if __name__ == "__main__":
     app.secret_key = 'super_secret_key'
     # to enable just the interactive debugger without the code reloading
     app.debug = True
-    port = int(os.environ.get('PORT', 8000))
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
