@@ -5,19 +5,20 @@ import requests
 import random
 import string
 import unicodedata
-from login import showLogin, gconnect, gdisconnect, fbconnect, fbdisconnect, disconnect
 
 from flask import Flask, g
 from flask import session as login_session
 from flask import (render_template, request, make_response,
-                   redirect, url_for, flash, jsonify, send_from_directory)
+                   redirect, url_for, flash, jsonify, send_from_directory, abort)
 
 from flask_wtf import FlaskForm
+from flask_wtf.csrf import CSRFProtect
 from flask_uploads import UploadSet, IMAGES, configure_uploads
 from flask_wtf.file import FileField, FileAllowed, FileRequired, DataRequired
 from werkzeug.utils import secure_filename
 
-from wtforms import (StringField, DateField, TextField, SubmitField, SelectField, TextAreaField)
+from wtforms import (StringField, DateField, TextField,
+                     SubmitField, SelectField, TextAreaField)
 from wtforms import validators, ValidationError
 
 from sqlalchemy import create_engine, update, asc
@@ -52,6 +53,7 @@ session = DBSession()
 CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())[
     'web']['client_id']
 
+csrf = CSRFProtect(app)
 
 class CreateForm(FlaskForm):
     name = TextField("Name", validators=[DataRequired()])
@@ -78,7 +80,10 @@ class CreateForm(FlaskForm):
                                     ('XBox', 'XBox'),
                                     ('PC', 'PC')])
 
-    year = TextField('Release Year')
+    creators = TextField('Creators', validators=[DataRequired()])
+
+    release_date = DateField('Release Date', format='%m/%d/%Y')
+
     submit = SubmitField("Create")
 
 
@@ -88,6 +93,7 @@ class CreateForm(FlaskForm):
 
 
 @auth.verify_password
+@csrf.exempt
 def verify_password(username_or_token, password):
     # Try to see if it's a token first
     user_id = User.verify_auth_token(username_or_token)
@@ -104,6 +110,7 @@ def verify_password(username_or_token, password):
 
 # render login.html
 @app.route('/login')
+@csrf.exempt
 def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in range(32))
@@ -114,6 +121,7 @@ def showLogin():
 
 # login with google
 @app.route('/gconnect', methods=['POST'])
+@csrf.exempt
 def gconnect():
     # check for cross-site request forgery
     if request.args.get('state') != login_session['state']:
@@ -142,7 +150,6 @@ def gconnect():
     access_token = credentials.access_token
     url = ('https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=%s' %
            access_token)
-
     h = httplib2.Http()
 
     # get the content from this link
@@ -202,7 +209,7 @@ def gconnect():
     if not user_id:
         user_id = create_user(login_session)
     login_session['user_id'] = user_id
-    # login_session['token'] = user.generate_auth_token(600)
+    # login_session['token'] = g.user.generate_auth_token(600)
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -218,6 +225,7 @@ def gconnect():
 # google disconnect - revoke a current user's token and reset their
 # login_session
 @app.route("/gdisconnect")
+@csrf.exempt
 def gdisconnect():
     # Only disconnect a connected user
     credentials = login_session.get('credentials')
@@ -241,6 +249,7 @@ def gdisconnect():
         del login_session['username']
         del login_session['picture']
         del login_session['email']
+        del login_session['user_id']
 
         response = make_response(json.dumps("Successfully disconnected."), 200)
         response.headers['Content-Type'] = 'application/json'
@@ -255,6 +264,7 @@ def gdisconnect():
 
 # login with facebook
 @app.route('/fbconnect', methods=['POST'])
+@csrf.exempt
 def fbconnect():
     # protection against cross site forgery attack
     if request.args.get('state') != login_session['state']:
@@ -308,7 +318,7 @@ def fbconnect():
         user_id = create_user(login_session)
     login_session['user_id'] = user_id
 
-    login_session['token'] = user.generate_auth_token(600)
+    # login_session['token'] = g.user.generate_auth_token(600)
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -324,6 +334,7 @@ def fbconnect():
 
 # facebook disconnect
 @app.route('/fbdisconnect')
+@csrf.exempt
 def fbdisconnect():
     facebook_id = login_session["facebook_id"]
     url = "https://graph.facebook.com/%s/permissions" % facebook_id
@@ -395,15 +406,38 @@ def show_categories():
 # show games for a particular category
 @app.route('/category/<int:category_id>/')
 @app.route('/category/<int:category_id>/games/')
-def show_games(category_id):
+def show_games_by_category(category_id):
+    if 'username' not in login_session:
+        user_id = None
+    else:
+        user_id = login_session['user_id']
     category = session.query(Category).filter_by(id=category_id).one()
     games = session.query(Games).filter_by(category_id=category_id).all()
-    return render_template('games.html',
+    return render_template('show_games_by_category.html',
                            category=category,
-                           games=games)
+                           games=games, user_id=user_id)
 
 
-# Create a new game item
+# show all games
+@app.route('/games/')
+def show_games():
+    if 'username' not in login_session:
+        user_id = None
+    else:
+        user_id = login_session['user_id']
+    games = session.query(Games).all()
+    return render_template('games.html', games=games, user_id=user_id)
+
+
+# show a game with id
+@app.route('/games/<int:game_id>')
+def show_game(game_id):
+    game = session.query(Games).filter_by(id=game_id).one()
+    category = session.query(Category).filter_by(id=game.category_id).one()
+    return render_template('game_page.html', game=game, category=category, embed_link=embed_link(game.video_path))
+
+
+# Create new game data
 @app.route('/games/new/', methods=['GET', 'POST'])
 def new_game():
     form = CreateForm()
@@ -416,7 +450,6 @@ def new_game():
         game = session.query(Games).filter_by(name=name).first()
         if game is None:
             flash('Game already exists in the database')
-        year = normalize(form.year.data)
         description = normalize(form.description.data)
 
         image_path = form.image.data
@@ -433,16 +466,22 @@ def new_game():
                 app.config['UPLOAD_IMAGES_FOLDER'], banner_file
             ))
 
+        platform = normalize(form.platform.data)
+        creators = normalize(form.creators.data)
+        release_date = form.release_date.data
         video_path = normalize(form.youtubeVideoURL.data)
         category_id = normalize(form.category.data)
+
         new_game = Games(name=name,
-                         year=year,
                          description=description,
                          image_path=normalize(image_path.filename),
                          banner_path=normalize(banner_path.filename),
+                         platform=platform,
+                         creators=creators,
+                         release_date=release_date,
                          video_path=video_path,
                          category_id=category_id,
-                         user_id=1)
+                         user_id=login_session['user_id'])
         print(new_game.name)
         session.add(new_game)
         session.commit()
@@ -453,13 +492,15 @@ def new_game():
                                form=form)
 
 
+# Edit a game's data
 @app.route('/games/<int:game_id>/edit', methods=['GET', 'POST'])
 def edit_game(game_id):
     if 'username' not in login_session:
         return redirect('/login')
     edited_game = session.query(Games).filter_by(id=game_id).one()
     form = CreateForm(category=edited_game.category_id)
-    edited_game_category = session.query(Category).filter_by(id=edited_game.category_id).one()
+    edited_game_category = session.query(
+        Category).filter_by(id=edited_game.category_id).one()
     if request.method == 'POST':
         if form.validate() is False:
             flash('All fields are required.')
@@ -467,8 +508,6 @@ def edit_game(game_id):
             edited_game.name = normalize(form.name.data)
         if form.description.data:
             edited_game.description = normalize(form.description.data)
-        if form.year.data:
-            edited_game.year = normalize(form.year.data)
         if form.image.data:
             image_path = form.image.data
             if image_path and allowed_file(image_path.filename):
@@ -489,10 +528,17 @@ def edit_game(game_id):
             edited_game.video_path = normalize(form.youtubeVideoURL.data)
         if form.category.data:
             edited_game.category_id = normalize(form.category.data)
+        if form.platform.data:
+            edited_game.platform = normalize(form.platform.data)
+        if form.creators.data:
+            edited_game.creators = normalize(form.creators.data)
+        if form.release_date.data:
+            edited_game.release_date = normalize(form.release_date.data)
         print(edited_game.name)
         session.add(edited_game)
         session.commit()
-        flash('Game data for ' + edited_game.name + ' edited and saved successfully!!')
+        flash('Game data for ' + edited_game.name +
+              ' edited and saved successfully!!')
         return redirect(url_for('show_games', game_id=edited_game.id, category_id=edited_game.category_id))
     else:
         return render_template('edit_game.html',
@@ -500,6 +546,7 @@ def edit_game(game_id):
                                game=edited_game)
 
 
+# delete a game
 @app.route('/games/<int:game_id>/delete', methods=['GET', 'POST'])
 def delete_game(game_id):
     form = CreateForm()
@@ -518,6 +565,13 @@ def delete_game(game_id):
         return redirect(url_for('show_games', game_id=game_id, category_id=game.category_id))
     else:
         return render_template('delete_game.html', game=game, form=form)
+
+
+# see images on a tab in the browser
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_IMAGES_FOLDER'],
+                               filename)
 
 
 # ------------------------------------------------------------
@@ -566,10 +620,18 @@ def save_image(img, path):
     img = normalize(attr.filename)
 
 
-@app.route('/uploads/<path:filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_IMAGES_FOLDER'],
-                               filename)
+def embed_link(video):
+    url = video
+    print(url)
+    url = url.replace("watch?v=", "embed/")
+    return url
+
+
+@app.route('/find_category/<game>')
+def find_category(game):
+    category = session.query(Category).filter_by(id=game.category_id).one()
+    return category.name
+
 
 # run if execution is through a python interpreter
 if __name__ == "__main__":

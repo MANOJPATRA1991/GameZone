@@ -83,12 +83,13 @@ class Games(Base):
     __tablename__ = 'games'
     id = Column(Integer, primary_key=True)
     name = Column(String(250))
-    year = Column(String(10))
+    release_date = Column(DateTime)
     description = Column(String(4096))
     image_path = Column(String(500))
     banner_path = Column(String(500))
     video_path = Column(String(500))
     platform = Column(String(100))
+    creators = Column(String(100))
     created = Column(DateTime, default=func.now())
     category_id = Column(Integer, ForeignKey('category.id'))
     category = relationship(Category)
@@ -100,8 +101,9 @@ class Games(Base):
     def serialize(self):
         return {
             'name': self.name,
-            'year': self.year,
+            'release_date': self.release_date,
             'platform': self.platform,
+            'creators': self.creators,
             'description': self.description,
             'image_path': self.image_path,
             'banner_path': self.banner_path,
@@ -111,7 +113,6 @@ class Games(Base):
             'id': self.id,
             'user_id': self.user_id
         }
-
 
 
 engine = create_engine('sqlite:///catalog.db')

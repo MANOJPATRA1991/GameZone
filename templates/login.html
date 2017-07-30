@@ -1,6 +1,6 @@
 {% extends "main.html" %}
-{% block content %}
 {% include "header.html" %}
+{% block content %}
     <div class="container">
     	<div class="row">
     		<div class="col-md-12">
@@ -10,7 +10,7 @@
     {# redirecturi: 'postmessage' enables the one-time-code flow #}
     {# accesstype: 'offline' means the backend server will have access to user data in the API server
         even when user is offline #}
-    {# cookipolicy deterrmines the scope of the URIs to access the API server #}
+    {# cookipolicy determines the scope of the URIs to access the API server #}
     <div id="signinButton">
         <span class="g-signin"
               data-scope="openid email"
