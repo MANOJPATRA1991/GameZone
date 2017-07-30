@@ -638,8 +638,5 @@ if __name__ == "__main__":
     app.secret_key = 'super_secret_key'
     # to enable just the interactive debugger without the code reloading
     app.debug = True
-    # Runs the application on a local development server.
-    # Do not use run() in a production setting.
-    # Defaults to 127.0.0.1
-    # Set this to 0.0.0.0 to have the server available externally as well.
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 8000))
+    app.run(host='0.0.0.0', port=port)
