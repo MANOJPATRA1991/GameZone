@@ -387,6 +387,7 @@ def game_json(category_id, game_id):
 @app.route('/category/')
 def show_categories():
     categories = session.query(Category).order_by(asc(Category.name))
+    flash("Welcome!")
     return render_template('categories.html', categories=categories)
 
 
