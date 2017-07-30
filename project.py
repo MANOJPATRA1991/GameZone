@@ -56,7 +56,7 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 # load client id for google log in
-CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())[
+CLIENT_ID = json.loads(open('g_client_secrets.json', 'r').read())[
     'web']['client_id']
 
 # csrf protection
@@ -642,5 +642,5 @@ if __name__ == "__main__":
     app.secret_key = 'super_secret_key'
     # to enable just the interactive debugger without the code reloading
     app.debug = True
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 8000))
     app.run(host='0.0.0.0', port=port)

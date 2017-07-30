@@ -22,7 +22,7 @@
                           data-height="50"
                           data-longtitle="true"
                           data-theme="dark"
-                          data-clientid="596032606135-14mc8ucnkbm1t07qtijgig7dqp2edqer.apps.googleusercontent.com"
+                          data-clientid="341472935263-5tlhf4rn1dh88qufpkhnktsg5k4hj88u.apps.googleusercontent.com"
                           data-redirecturi="postmessage"
                           data-accesstype="offline"
                           data-cookiepolicy="single_host_origin"
@@ -75,22 +75,23 @@
 
             {# FACEBOOK SIGN IN #}
             <script>
-              window.fbAsyncInit = function() {
-                FB.init({
-                  appId      : '129098244363990',
-                  xfbml      : true,
-                  version    : 'v2.10'
-                });
-                FB.AppEvents.logPageView();
-              };
+                    window.fbAsyncInit = function() {
+                    FB.init({
+                        appId      : '1380078725415109',
+                        cookie     : true,
+                        xfbml      : true,
+                        version    : 'v2.8'
+                    });
+                    FB.AppEvents.logPageView();   
+                    };
 
-              (function(d, s, id){
-                 var js, fjs = d.getElementsByTagName(s)[0];
-                 if (d.getElementById(id)) {return;}
-                 js = d.createElement(s); js.id = id;
-                 js.src = "//connect.facebook.net/en_US/sdk.js";
-                 fjs.parentNode.insertBefore(js, fjs);
-               }(document, 'script', 'facebook-jssdk'));
+                    (function(d, s, id){
+                        var js, fjs = d.getElementsByTagName(s)[0];
+                        if (d.getElementById(id)) {return;}
+                        js = d.createElement(s); js.id = id;
+                        js.src = "//connect.facebook.net/en_US/sdk.js";
+                        fjs.parentNode.insertBefore(js, fjs);
+                    }(document, 'script', 'facebook-jssdk'));
 
                 // Here we run a very simple test of the Graph API after login is
                 // successful.  See statusChangeCallback() for when this call is made.
