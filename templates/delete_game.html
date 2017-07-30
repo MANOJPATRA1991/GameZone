@@ -2,7 +2,7 @@
 {% block content %}
 {% include "header.html" %}
 		{% for message in form.name.errors %}
-			div>{{ message }}</div>
+			<div>{{ message }}</div>
 		{% endfor %}
 		<div class="container">
 			<div class="new_game flex-row">

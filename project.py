@@ -6,22 +6,25 @@ import random
 import string
 import unicodedata
 
-from flask import Flask, g
+from flask import Flask
 from flask import session as login_session
 from flask import (render_template, request, make_response,
                    redirect, url_for, flash, jsonify, send_from_directory, abort)
 
 from flask_wtf import FlaskForm
+
 from flask_wtf.csrf import CSRFProtect
-from flask_uploads import UploadSet, IMAGES, configure_uploads
-from flask_wtf.file import FileField, FileAllowed, FileRequired, DataRequired
+
+from flask_wtf.file import FileField, FileRequired, DataRequired
+
 from werkzeug.utils import secure_filename
 
-from wtforms import (StringField, DateField, TextField,
+from wtforms import (DateField, TextField,
                      SubmitField, SelectField, TextAreaField)
+
 from wtforms import validators, ValidationError
 
-from sqlalchemy import create_engine, update, asc
+from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
 
 from database_setup import Base, User, Category, Games
@@ -32,12 +35,14 @@ from oauth2client.client import FlowExchangeError
 from flask_httpauth import HTTPBasicAuth
 
 auth = HTTPBasicAuth()
+
 # create an instance of the Flask class
 app = Flask(__name__)
 
 # folder to store the uploaded files
 UPLOAD_IMAGES_FOLDER = 'uploads/'
 app.config['UPLOAD_IMAGES_FOLDER'] = UPLOAD_IMAGES_FOLDER
+
 # extensions allowed for uploading to prevent XSS(Cross-Site-Scripting)
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
@@ -50,11 +55,14 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
+# load client id for google log in
 CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())[
     'web']['client_id']
 
+# csrf protection
 csrf = CSRFProtect(app)
 
+# Create form for CRUD operations
 class CreateForm(FlaskForm):
     name = TextField("Name", validators=[DataRequired()])
     description = TextAreaField("Description", validators=[DataRequired()])
@@ -92,20 +100,20 @@ class CreateForm(FlaskForm):
 # ------------------------------------------------------------
 
 
-@auth.verify_password
-@csrf.exempt
-def verify_password(username_or_token, password):
-    # Try to see if it's a token first
-    user_id = User.verify_auth_token(username_or_token)
-    if user_id:
-        user = session.query(User).filter_by(id=user_id).one()
-    else:
-        user = session.query(User).filter_by(
-            username=username_or_token).first()
-        if not user or not user.verify_password(password):
-            return False
-    g.user = user
-    return True
+# @auth.verify_password
+# @csrf.exempt
+# def verify_password(username_or_token, password):
+#     # Try to see if it's a token first
+#     user_id = User.verify_auth_token(username_or_token)
+#     if user_id:
+#         user = session.query(User).filter_by(id=user_id).one()
+#     else:
+#         user = session.query(User).filter_by(
+#             name=username_or_token).first()
+#         if not user or not user.verify_password(password):
+#             return False
+#     g.user = user
+#     return True
 
 
 # render login.html
@@ -156,7 +164,6 @@ def gconnect():
     req = h.request(url, 'GET')[1]
     req_json = req.decode('utf8').replace("'", '"')
     result = json.loads(req_json)
-    print(result)
     if result.get('error') is not None:
         # internal server error
         response = make_response(json.dumps(result.get('error')), 500)
@@ -204,22 +211,12 @@ def gconnect():
     login_session['picture'] = data["picture"]
     login_session['email'] = data["email"]
 
-    # see if user exists, if no, then create a new user
     user_id = get_user_id(login_session['email'])
     if not user_id:
         user_id = create_user(login_session)
     login_session['user_id'] = user_id
-    # login_session['token'] = g.user.generate_auth_token(600)
-    output = ''
-    output += '<h1>Welcome, '
-    output += login_session['username']
-    output += '!</h1>'
-    output += '<img src="'
-    output += login_session['picture']
-    output += ' " style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: 150px;-moz-border-radius: 150px;"> '
     flash("You are now logged in as %s" % login_session['username'])
-    print("done!")
-    return output
+    return "Login Successful"
 
 
 # google disconnect - revoke a current user's token and reset their
@@ -272,7 +269,6 @@ def fbconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
     access_token = request.data.decode('utf8')
-    print("access token received %s " % access_token)
 
     # Exchange client token for long-lived server side token
     app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
@@ -319,17 +315,8 @@ def fbconnect():
     login_session['user_id'] = user_id
 
     # login_session['token'] = g.user.generate_auth_token(600)
-    output = ''
-    output += '<h1>Welcome, '
-    output += login_session['username']
-    output += '!</h1>'
-    output += '<img src="'
-    output += login_session['picture']
-    output += '" style = "width: 300px; height: 300px;border-radius: 150px;-webkit-border-radius: ' \
-              '150px;-moz-border-radius: 150px;"> '
     flash("You are now logged in as %s" % login_session['username'])
-    print("done!")
-    return output
+    return "Login Successful"
 
 
 # facebook disconnect
@@ -434,11 +421,15 @@ def show_games():
 def show_game(game_id):
     game = session.query(Games).filter_by(id=game_id).one()
     category = session.query(Category).filter_by(id=game.category_id).one()
-    return render_template('game_page.html', game=game, category=category, embed_link=embed_link(game.video_path))
+    return render_template('game_page.html',
+                           game=game,
+                           category=category,
+                           embed_link=embed_link(game.video_path))
 
 
 # Create new game data
 @app.route('/games/new/', methods=['GET', 'POST'])
+@auth.login_required
 def new_game():
     form = CreateForm()
     if 'username' not in login_session:
@@ -482,11 +473,12 @@ def new_game():
                          video_path=video_path,
                          category_id=category_id,
                          user_id=login_session['user_id'])
-        print(new_game.name)
         session.add(new_game)
         session.commit()
         flash('New game data for ' + new_game.name + ' created!!')
-        return redirect(url_for('show_games', game_id=new_game.id, category_id=new_game.category_id))
+        return redirect(url_for('show_games',
+                                game_id=new_game.id,
+                                category_id=new_game.category_id))
     else:
         return render_template('new_game.html',
                                form=form)
@@ -499,75 +491,82 @@ def edit_game(game_id):
         return redirect('/login')
     edited_game = session.query(Games).filter_by(id=game_id).one()
     form = CreateForm(category=edited_game.category_id)
-    edited_game_category = session.query(
-        Category).filter_by(id=edited_game.category_id).one()
-    if request.method == 'POST':
-        if form.validate() is False:
-            flash('All fields are required.')
-        if form.name.data:
-            edited_game.name = normalize(form.name.data)
-        if form.description.data:
-            edited_game.description = normalize(form.description.data)
-        if form.image.data:
-            image_path = form.image.data
-            if image_path and allowed_file(image_path.filename):
-                image_file = secure_filename(image_path.filename)
-                image_path.save(os.path.join(
-                    app.config['UPLOAD_IMAGES_FOLDER'], image_file
-                ))
-            edited_game.image_path = normalize(image_path.filename)
-        if form.banner.data:
-            banner_path = form.banner.data
-            if banner_path and allowed_file(banner_path.filename):
-                banner_file = secure_filename(banner_path.filename)
-                banner_path.save(os.path.join(
-                    app.config['UPLOAD_IMAGES_FOLDER'], banner_file
-                ))
-            edited_game.banner_path = normalize(banner_path.filename)
-        if form.youtubeVideoURL.data:
-            edited_game.video_path = normalize(form.youtubeVideoURL.data)
-        if form.category.data:
-            edited_game.category_id = normalize(form.category.data)
-        if form.platform.data:
-            edited_game.platform = normalize(form.platform.data)
-        if form.creators.data:
-            edited_game.creators = normalize(form.creators.data)
-        if form.release_date.data:
-            edited_game.release_date = normalize(form.release_date.data)
-        print(edited_game.name)
-        session.add(edited_game)
-        session.commit()
-        flash('Game data for ' + edited_game.name +
-              ' edited and saved successfully!!')
-        return redirect(url_for('show_games', game_id=edited_game.id, category_id=edited_game.category_id))
+    if edited_game.user_id == login_session['user_id']:
+        if request.method == 'POST':
+            if form.validate() is False:
+                flash('All fields are required.')
+            if form.name.data:
+                edited_game.name = normalize(form.name.data)
+            if form.description.data:
+                edited_game.description = normalize(form.description.data)
+            if form.image.data:
+                image_path = form.image.data
+                if image_path and allowed_file(image_path.filename):
+                    image_file = secure_filename(image_path.filename)
+                    image_path.save(os.path.join(
+                        app.config['UPLOAD_IMAGES_FOLDER'], image_file
+                    ))
+                edited_game.image_path = normalize(image_path.filename)
+            if form.banner.data:
+                banner_path = form.banner.data
+                if banner_path and allowed_file(banner_path.filename):
+                    banner_file = secure_filename(banner_path.filename)
+                    banner_path.save(os.path.join(
+                        app.config['UPLOAD_IMAGES_FOLDER'], banner_file
+                    ))
+                edited_game.banner_path = normalize(banner_path.filename)
+            if form.youtubeVideoURL.data:
+                edited_game.video_path = normalize(form.youtubeVideoURL.data)
+            if form.category.data:
+                edited_game.category_id = normalize(form.category.data)
+            if form.platform.data:
+                edited_game.platform = normalize(form.platform.data)
+            if form.creators.data:
+                edited_game.creators = normalize(form.creators.data)
+            if form.release_date.data:
+                edited_game.release_date = normalize(form.release_date.data)
+            print(edited_game.name)
+            session.add(edited_game)
+            session.commit()
+            flash('Game data for ' + edited_game.name +
+                  ' edited and saved successfully!!')
+            return redirect(url_for('show_games',
+                                    game_id=edited_game.id,
+                                    category_id=edited_game.category_id))
+        else:
+            return render_template('edit_game.html',
+                                   form=form,
+                                   game=edited_game)
     else:
-        return render_template('edit_game.html',
-                               form=form,
-                               game=edited_game)
+        response = make_response(json.dumps('You are not authorized \
+                                            to perform the operation'), 401)
+        abort(response)
 
 
-# delete a game
+# Delete a game
 @app.route('/games/<int:game_id>/delete', methods=['GET', 'POST'])
 def delete_game(game_id):
     form = CreateForm()
     if 'username' not in login_session:
         return redirect('/login')
     game = session.query(Games).filter_by(id=game_id).one()
-    if game.user_id != login_session['user_id']:
-        return "<script>function myFunction() {" \
-               "alert('You are not authorized to delete" \
-               "this item from this restaurant.');}</script>" \
-               "<body onload='myFunction()'>"
-    if request.method == 'POST':
-        session.delete(game)
-        session.commit()
-        flash('Game Data Successfully Deleted')
-        return redirect(url_for('show_games', game_id=game_id, category_id=game.category_id))
+    if game.user_id == login_session['user_id']:
+        if request.method == 'POST':
+            session.delete(game)
+            session.commit()
+            flash('Game Data Successfully Deleted')
+            return redirect(url_for('show_games',
+                                    game_id=game_id,
+                                    category_id=game.category_id))
+        else:
+            return render_template('delete_game.html', game=game, form=form)
     else:
-        return render_template('delete_game.html', game=game, form=form)
+        response = make_response(json.dumps('You are not authorized \
+                                            to perform the operation'), 401)
+        abort(response)
 
 
-# see images on a tab in the browser
+# See images on a tab in the browser
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_IMAGES_FOLDER'],
@@ -577,19 +576,22 @@ def uploaded_file(filename):
 # ------------------------------------------------------------
 #                       HELPER METHODS
 # ------------------------------------------------------------
+# get user based on email
 def get_user_id(email):
     try:
         user = session.query(User).filter_by(email=email).one()
         return user.id
-    except:
+    except Exception:
         return None
 
 
+# get user bades on user-id
 def get_user_info(user_id):
     user = session.query(User).filter_by(id=user_id).one()
     return user
 
 
+# create user
 def create_user(login_session):
     new_user = User(name=login_session['username'],
                     email=login_session['email'],
@@ -600,16 +602,19 @@ def create_user(login_session):
     return user.id
 
 
+# normalize to ascii
 def normalize(val):
     return unicodedata.normalize(
         'NFKD', val).encode('ascii', 'ignore')
 
 
+# check if uploaded file is allowed
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+# save image to database if allowed
 def save_image(img, path):
     attr = path
     if attr and allowed_file(attr.filename):
@@ -620,17 +625,12 @@ def save_image(img, path):
     img = normalize(attr.filename)
 
 
+# convert youtube link to embed format
 def embed_link(video):
     url = video
     print(url)
     url = url.replace("watch?v=", "embed/")
     return url
-
-
-@app.route('/find_category/<game>')
-def find_category(game):
-    category = session.query(Category).filter_by(id=game.category_id).one()
-    return category.name
 
 
 # run if execution is through a python interpreter
