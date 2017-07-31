@@ -9,7 +9,8 @@ import unicodedata
 from flask import Flask
 from flask import session as login_session
 from flask import (render_template, request, make_response,
-                   redirect, url_for, flash, jsonify, send_from_directory, abort)
+                   redirect, url_for, flash, jsonify,
+                   send_from_directory, abort)
 
 from flask_wtf import FlaskForm
 
@@ -20,11 +21,12 @@ from flask_wtf.file import FileField, FileRequired, DataRequired
 from werkzeug.utils import secure_filename
 
 from wtforms import (DateField, TextField,
-                     SubmitField, SelectField, TextAreaField)
+                     SubmitField, SelectField, TextAreaField,
+                     BooleanField, PasswordField)
 
-from wtforms import validators, ValidationError
+from wtforms import validators
 
-from sqlalchemy import create_engine, asc, func
+from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
 
 from database_setup import Base, User, Category, Games
@@ -46,8 +48,6 @@ app.config['UPLOAD_IMAGES_FOLDER'] = UPLOAD_IMAGES_FOLDER
 # extensions allowed for uploading to prevent XSS(Cross-Site-Scripting)
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
-# current working directory
-WORKING_DIRECTORY = os.path.dirname(os.path.realpath('__file__'))
 
 engine = create_engine('sqlite:///catalog.db')
 
@@ -61,6 +61,29 @@ CLIENT_ID = json.loads(open('g_client_secrets.json', 'r').read())[
 
 # csrf protection
 csrf = CSRFProtect(app)
+
+
+# Create form for User Registration
+class RegistrationForm(FlaskForm):
+    username = TextField('Username', [validators.Length(min=4, max=20)])
+    email = TextField('Email Address', [validators.Length(min=6, max=50)])
+    password = PasswordField('New Password', [
+                             validators.DataRequired(),
+                             validators.EqualTo('confirm',
+                                                message='Passwords must match')
+                             ])
+
+    picture = FileField('Image', validators=[
+        FileRequired()
+    ])
+
+    confirm = PasswordField('Repeat Password')
+    accept_tos = BooleanField('I accept the Terms of Service and \
+                              Privacy Notice (updated Jul 31, 2017)',
+                              [validators.DataRequired()])
+
+    submit = SubmitField("Register")
+
 
 # Create form for CRUD operations
 class CreateForm(FlaskForm):
@@ -99,21 +122,58 @@ class CreateForm(FlaskForm):
 #            USER AUTHENTICATION AND AUTHORIZATION
 # ------------------------------------------------------------
 
+# register user for application
+@app.route('/register', methods=['GET', 'POST'])
+def user_register():
+    form = RegistrationForm()
+    if request.method == "POST":
+        if form.validate() is False:
+            flash("Invalid", 'warning')
+            return render_template('register.html', form=form)
+        username = form.username.data
+        email = form.email.data
+        password = form.password.data
+        accept_tos = form.accept_tos.data
 
-# @auth.verify_password
-# @csrf.exempt
-# def verify_password(username_or_token, password):
-#     # Try to see if it's a token first
-#     user_id = User.verify_auth_token(username_or_token)
-#     if user_id:
-#         user = session.query(User).filter_by(id=user_id).one()
-#     else:
-#         user = session.query(User).filter_by(
-#             name=username_or_token).first()
-#         if not user or not user.verify_password(password):
-#             return False
-#     g.user = user
-#     return True
+        if username == "" or password == "" or email == "":
+            flash(
+                "Arguments Missing. Make sure to enter \
+                username and password to signup.", 'danger')
+            return render_template('register.html', form=form)
+
+        if (session.query(User).filter_by(
+                name=username).first()
+                is not None) or (session.query(User).filter_by(
+                email=email).first() is not None):
+            flash("That username or email is \
+                already taken, please try another", 'warning')
+            return render_template('register.html', form=form)
+
+        picture = form.picture.data
+        if picture and allowed_file(picture.filename):
+            image_file = secure_filename(picture.filename)
+            picture.save(os.path.join(
+                app.config['UPLOAD_IMAGES_FOLDER'], image_file
+            ))
+
+        login_session['username'] = username
+        login_session['email'] = email
+        login_session['picture'] = normalize(picture.filename)
+
+        user_id = get_user_id(login_session['email'])
+        if not user_id and accept_tos:
+            user_id = create_user(login_session)
+            user = get_user_info(user_id)
+            user.hash_password(password)
+            session.add(user)
+            session.commit()
+
+        login_session['user_id'] = user_id
+        flash("You are successfully logged in as %s" % username, 'success')
+        return redirect(url_for('show_categories'))
+
+    else:
+        return render_template("register.html", form=form)
 
 
 # render login.html
@@ -125,6 +185,25 @@ def showLogin():
     login_session['state'] = state
     # RENDER THE LOGIN TEMPLATE
     return render_template('login.html', STATE=state)
+
+
+# login normal user
+@app.route('/user_login', methods=['POST'])
+@csrf.exempt
+def user_login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = session.query(User).filter_by(name=username).first()
+        if user and user.verify_password(password):
+            login_session['username'] = user.name
+            login_session['email'] = user.email
+            login_session['user_id'] = user.id
+            flash("You are successfully logged in as %s" % username, 'success')
+            return redirect(url_for('show_categories'))
+        else:
+            flash("Incorrect credentials", 'danger')
+            return redirect(url_for('showLogin'))
 
 
 # login with google
@@ -215,7 +294,7 @@ def gconnect():
     if not user_id:
         user_id = create_user(login_session)
     login_session['user_id'] = user_id
-    flash("You are now logged in as %s" % login_session['username'])
+    flash("You are now logged in as %s" % login_session['username'], 'success')
     return "Login Successful"
 
 
@@ -285,10 +364,10 @@ def fbconnect():
     req_json = req.decode('utf8').replace("'", '"')
     data = json.loads(req_json)
     # use token to get user info from API
-    userinfo_url = "https://graph.facebook.com/v2.10/me"
     token = data['access_token']
 
-    url = "https://graph.facebook.com/v2.10/me?access_token=%s&fields=name,id,email" % token
+    url = ("https://graph.facebook.com/v2.10/me?"
+           "access_token=%s&fields=name,id,email") % token
     h = httplib2.Http()
     req = h.request(url, 'GET')[1]
     req_json = req.decode('utf8').replace("'", '"')
@@ -300,7 +379,8 @@ def fbconnect():
     login_session["facebook_id"] = data["id"]
 
     # Get user picture
-    url = "https://graph.facebook.com/v2.10/me/picture?access_token=%s&redirect=0&height=200&width=200" % token
+    url = ("https://graph.facebook.com/v2.10/me/picture?"
+           "access_token=%s&redirect=0&height=200&width=200") % token
     h = httplib2.Http()
     req = h.request(url, 'GET')[1]
     req_json = req.decode('utf8').replace("'", '"')
@@ -313,9 +393,7 @@ def fbconnect():
     if not user_id:
         user_id = create_user(login_session)
     login_session['user_id'] = user_id
-
-    # login_session['token'] = g.user.generate_auth_token(600)
-    flash("You are now logged in as %s" % login_session['username'])
+    flash("You are now logged in as %s" % login_session['username'], 'success')
     return "Login Successful"
 
 
@@ -349,10 +427,13 @@ def disconnect():
 
         del login_session['provider']
 
-        flash("You have successfully been logged out.")
+        flash("You have successfully been logged out.", 'success')
         return redirect(url_for('show_categories'))
     else:
-        flash("You are not logged in to begin with.")
+        del login_session["username"]
+        del login_session["email"]
+        del login_session["user_id"]
+        flash("You have successfully been logged out.", 'success')
         return redirect(url_for('show_categories'))
 
 
@@ -381,13 +462,16 @@ def game_json(category_id, game_id):
     game = session.query(Games).filter_by(id=game_id).one()
     return jsonify(Games=game.serialize)
 
+@app.route('/games/JSON')
+def games_json():
+    games = session.query(Games).all()
+    return jsonify(Games=[game.serialize for game in games])
 
 # show all categories
 @app.route('/')
 @app.route('/category/')
 def show_categories():
     categories = session.query(Category).order_by(asc(Category.name))
-    flash("Welcome!")
     return render_template('categories.html', categories=categories)
 
 
@@ -395,26 +479,33 @@ def show_categories():
 @app.route('/category/<int:category_id>/')
 @app.route('/category/<int:category_id>/games/')
 def show_games_by_category(category_id):
+    admin = False
     if 'username' not in login_session:
         user_id = None
     else:
         user_id = login_session['user_id']
+        admin = check_admin(user_id)
     category = session.query(Category).filter_by(id=category_id).one()
     games = session.query(Games).filter_by(category_id=category_id).all()
     return render_template('show_games_by_category.html',
                            category=category,
-                           games=games, user_id=user_id)
+                           games=games, user_id=user_id, admin=admin)
 
 
 # show all games
 @app.route('/games/')
 def show_games():
+    admin = False
     if 'username' not in login_session:
         user_id = None
     else:
         user_id = login_session['user_id']
+        admin = check_admin(user_id)
     games = session.query(Games).all()
-    return render_template('games.html', games=games, user_id=user_id)
+    return render_template('games.html',
+                           games=games,
+                           user_id=user_id,
+                           admin=admin)
 
 
 # show a game with id
@@ -432,18 +523,19 @@ def show_game(game_id):
 
 # Create new game data
 @app.route('/games/new/', methods=['GET', 'POST'])
-@auth.login_required
 def new_game():
     form = CreateForm()
     if 'username' not in login_session:
         return redirect('/login')
     if request.method == 'POST':
         if form.validate() is False:
-            flash('All fields are required.')
+            flash('All fields are required.', 'warning')
         name = normalize(form.name.data)
         game = session.query(Games).filter_by(name=name).first()
-        if game is None:
-            flash('Game already exists in the database')
+        if game is not None:
+            flash('Game already exists in the database', 'warning')
+            return render_template('new_game.html',
+                                   form=form)
         description = normalize(form.description.data)
 
         image_path = form.image.data
@@ -478,10 +570,8 @@ def new_game():
                          user_id=login_session['user_id'])
         session.add(new_game)
         session.commit()
-        flash('New game data for ' + new_game.name + ' created!!')
-        return redirect(url_for('show_games',
-                                game_id=new_game.id,
-                                category_id=new_game.category_id))
+        flash('New game data for ' + new_game.name + ' created!!', 'success')
+        return redirect(url_for('show_games'))
     else:
         return render_template('new_game.html',
                                form=form)
@@ -495,10 +585,9 @@ def edit_game(game_id):
     edited_game = session.query(Games).filter_by(id=game_id).one()
     date_to_edit = edited_game.release_date.date().strftime("%d/%m/%y")
     form = CreateForm(category=edited_game.category_id)
-    if edited_game.user_id == login_session['user_id']:
+    if (edited_game.user_id ==
+            login_session['user_id']) or check_admin(login_session['user_id']):
         if request.method == 'POST':
-            if form.validate() is False:
-                flash('All fields are required.')
             if form.name.data:
                 edited_game.name = normalize(form.name.data)
             if form.description.data:
@@ -507,6 +596,10 @@ def edit_game(game_id):
                 image_path = form.image.data
                 if image_path and allowed_file(image_path.filename):
                     image_file = secure_filename(image_path.filename)
+                    os.remove(os.path.join(
+                        app.config['UPLOAD_IMAGES_FOLDER'],
+                        edited_game.image_path
+                    ))
                     image_path.save(os.path.join(
                         app.config['UPLOAD_IMAGES_FOLDER'], image_file
                     ))
@@ -515,6 +608,10 @@ def edit_game(game_id):
                 banner_path = form.banner.data
                 if banner_path and allowed_file(banner_path.filename):
                     banner_file = secure_filename(banner_path.filename)
+                    os.remove(os.path.join(
+                        app.config['UPLOAD_IMAGES_FOLDER'],
+                        edited_game.banner_path
+                    ))
                     banner_path.save(os.path.join(
                         app.config['UPLOAD_IMAGES_FOLDER'], banner_file
                     ))
@@ -533,10 +630,8 @@ def edit_game(game_id):
             session.add(edited_game)
             session.commit()
             flash('Game data for ' + edited_game.name +
-                  ' edited and saved successfully!!')
-            return redirect(url_for('show_games',
-                                    game_id=edited_game.id,
-                                    category_id=edited_game.category_id))
+                  ' edited and saved successfully!!', 'success')
+            return redirect(url_for('show_games'))
         else:
             return render_template('edit_game.html',
                                    form=form,
@@ -555,14 +650,13 @@ def delete_game(game_id):
     if 'username' not in login_session:
         return redirect('/login')
     game = session.query(Games).filter_by(id=game_id).one()
-    if game.user_id == login_session['user_id']:
+    if (game.user_id ==
+            login_session['user_id']) or check_admin(login_session['user_id']):
         if request.method == 'POST':
             session.delete(game)
             session.commit()
-            flash('Game Data Successfully Deleted')
-            return redirect(url_for('show_games',
-                                    game_id=game_id,
-                                    category_id=game.category_id))
+            flash('Game Data Successfully Deleted', 'success')
+            return redirect(url_for('show_games'))
         else:
             return render_template('delete_game.html', game=game, form=form)
     else:
@@ -581,6 +675,14 @@ def uploaded_file(filename):
 # ------------------------------------------------------------
 #                       HELPER METHODS
 # ------------------------------------------------------------
+# check if user is admin
+def check_admin(user_id):
+    if get_user_info(user_id).admin:
+        return True
+    else:
+        return False
+
+
 # get user based on email
 def get_user_id(email):
     try:
@@ -619,17 +721,6 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# save image to database if allowed
-def save_image(img, path):
-    attr = path
-    if attr and allowed_file(attr.filename):
-        image_file = secure_filename(attr.filename)
-        attr.save(os.path.join(
-            app.config['UPLOAD_IMAGES_FOLDER'], image_file
-        ))
-    img = normalize(attr.filename)
-
-
 # convert youtube link to embed format
 def embed_link(video):
     url = video
@@ -640,7 +731,8 @@ def embed_link(video):
 
 # run if execution is through a python interpreter
 if __name__ == "__main__":
-    app.secret_key = 'super_secret_key'
+    # secret key
+    app.secret_key = open('secret_key', 'r').read()
     # to enable just the interactive debugger without the code reloading
     app.debug = True
     port = int(os.environ.get('PORT', 8000))

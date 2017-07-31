@@ -19,4 +19,4 @@ pyasn1-modules==0.0.9
 six==1.10.0
 rsa==3.4.2
 Flask-SQLAlchemy==2.2
-
+passlib==1.7.1

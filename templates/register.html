@@ -1,0 +1,86 @@
+{% extends "main.html" %}
+{% block content %}
+{% include "header.html" %}
+
+<div class="container" align="center">
+	<div class="row login" align="center">
+		
+		{% with messages = get_flashed_messages(with_categories=true) %}
+	        {% if messages %}
+	          	{% for category, message in messages %}
+	          	<div class="alert alert-{{category}}" role="alert" align="center">
+        			<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	            	<strong>{{ message }}</strong>
+				</div>
+	          	{% endfor %}
+	        {% endif %}  
+		{% endwith %}
+		<div class="col-xs-12">
+			<form class="form-horizontal" action="{{url_for('user_register')}}" method="POST" enctype="multipart/form-data">
+				<fieldset>
+					<legend style="text-align: center;">Register</legend>
+					{{ form.csrf_token }}
+					<div class="form-group">
+						{{form.username.label(class_="col-sm-3 control-label")}}
+						<div class="col-sm-7">
+							{{form.username(class_= "form-control", placeholder="Enter your username")}}
+						</div>
+					</div>
+					<div class="form-group">
+						{{form.email.label(class_="col-sm-3 control-label")}}
+						<div class="col-sm-7">
+							{{form.email(class_= "form-control", placeholder="Enter your email address")}}
+						</div>
+					</div>
+					<div class="form-group">
+						{{form.password.label(class_="col-sm-3 control-label")}}
+						<div class="col-sm-7">
+							{{form.password(class_= "form-control", placeholder="Enter your new password")}}
+						</div>
+					</div>
+					<div class="form-group">
+						{{form.confirm.label(class_="col-sm-3 control-label")}}
+						<div class="col-sm-7">
+							{{form.confirm(class_= "form-control", placeholder="Re-enter to confirm your new password")}}
+						</div>
+					</div>
+					<div class="form-group">
+						<label class="col-sm-3 control-label">Profile Picture</label>
+						<div class="col-sm-7">
+							<div class="fileinput fileinput-new" data-provides="fileinput">
+							  <div class="fileinput-new thumbnail" style="width: 200px; height: 150px;">
+								<img data-src="" alt="Image should be within 400 x 600">
+							  </div>
+							  <div class="fileinput-preview fileinput-exists thumbnail" style="max-width: 200px; max-height: 150px;"></div>
+							  <div align="center">
+								<span class="btn btn-default btn-file"><span class="fileinput-new">Select Image</span><span class="fileinput-exists">Change</span>{{ form.picture }}</span>
+								<a href="#" class="btn btn-default fileinput-exists" data-dismiss="fileinput">Remove</a>
+							  </div>
+							</div>
+						</div>
+					</div>
+					<div class="form-group">
+							<div class="col-sm-2">
+								{{form.accept_tos(class_= "control-label")}}
+							</div>
+							<div class="col-sm-8 policy">
+								{{form.accept_tos.label(class_="control-label")}}
+							</div>
+					</div>
+					<div class="toolbar-section">
+								<div class="form-group">
+									<div>
+										{{form.submit(class_="btn btn-primary")}}
+									</div>
+								</div>
+							</div>
+				</fieldset>
+			</form>
+			{% if error %}
+				<p class="error"><strong>Error:</strong>{{error}}</p>
+			{% endif %}
+		</div>
+	</div>
+</div>
+
+{% endblock %}
