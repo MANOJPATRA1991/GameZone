@@ -223,7 +223,7 @@ def gconnect():
     try:
         # create a Flow object
         oauth_flow = flow_from_clientsecrets(
-            'client_secrets.json', scope='', redirect_uri='postmessage')
+            'g_client_secrets.json', scope='', redirect_uri='postmessage')
         # one-time-code flow that our server will be sending off
 
         # exchanges the authorization code for a Credentials object
@@ -463,10 +463,13 @@ def game_json(category_id, game_id):
     game = session.query(Games).filter_by(id=game_id).one()
     return jsonify(Games=game.serialize)
 
+
+# list all games in JSON format
 @app.route('/games/JSON')
 def games_json():
     games = session.query(Games).all()
     return jsonify(Games=[game.serialize for game in games])
+
 
 # show all categories
 @app.route('/')

@@ -36,12 +36,12 @@
                 <div id="signinButton">
                     <span class="g-signin"
                           data-scope="openid email"
-                          data-clientid="341472935263-5tlhf4rn1dh88qufpkhnktsg5k4hj88u.apps.googleusercontent.com"
+                          data-clientid="228365195461-l6ldkp06vi30c50eve044vv290vhqema.apps.googleusercontent.com"
                           data-redirecturi="postmessage"
                           data-accesstype="offline"
                           data-cookiepolicy="single_host_origin"
                           data-callback="signInCallback"
-                          data-approvalprompt="force">
+                          >
                     </span>
                 </div>
             </div>
@@ -71,7 +71,7 @@
                                     $('#result').html('</br>' + result + '</br>' +
                                     'Redirecting...');
                                     setTimeout(function () {
-                                        window.location.href = "/";
+                                        window.location.href = "/category/";
                                     }, 4000);
                                 }else if (authResult['error']){
                                     console.log('There was an error: ' + authResult['error']);
