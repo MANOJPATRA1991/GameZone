@@ -172,7 +172,7 @@ div.category a{
   height: 400px;
 }
 
-@media screen and (max-width: 768px)  {
+@media screen and (max-width: 992px)  {
     .lib-item.col-md-5 {
       padding-right: 15px;
     }
@@ -200,3 +200,10 @@ div.category a{
   padding-top: 0;
 }
 
+.lib-row tr td:nth-child(odd) {
+  text-align: right;  
+}
+
+.lib-row tr td:nth-child(even) {
+  text-align: left;  
+}

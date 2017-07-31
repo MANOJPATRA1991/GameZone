@@ -41,14 +41,28 @@
                                     <div class="lib-header-seperator"></div>
                                 </div>
                                 <div class="lib-row lib-desc">
-                                    <em>Release Date: </em>{{date}}
-                                    <br><br>
-                                    <em>Platform: </em>{{game.platform}}
-                                    <br><br>
-                                    <em>Category: </em>{{category.name}}
-                                    <br><br>
-                                    <em>Creators: </em>{{game.creators}}
-                                    <br><br>
+                                    <div class="table-responsive">          
+                                      <table class="table">
+                                        <tbody>
+                                            <tr>
+                                                <td><em>Release Date:</em></td>
+                                                <td>{{date}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><em>Platform: </em></td>
+                                                <td>{{game.platform}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><em>Category: </em></td>
+                                                <td>{{category.name}}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><em>Creators: </em></td>
+                                                <td>{{game.creators}}</td>
+                                            </tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>

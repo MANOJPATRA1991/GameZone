@@ -14,6 +14,7 @@
         {% if 'username' not in session %}
         <li role="presentation"><a href="{{url_for('showLogin')}}"><i class="fa fa-sign-in"></i> LOG IN </a></li>
         {% else %}
+        <li role="presentation">{{session['username']}}</li>
         <li role="presentation"><a href="{{url_for('new_game')}}">CREATE NEW GAME ENTRY</a> </li>
         <li role="presentation"><a href="{{url_for('disconnect')}}"><i class="fa fa-sign-out"></i> LOG OUT</a></li>
         {% endif %}

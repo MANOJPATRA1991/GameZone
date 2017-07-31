@@ -586,11 +586,14 @@ def new_game():
 def edit_game(game_id):
     if 'username' not in login_session:
         return redirect('/login')
-    edited_game = session.query(Games).filter_by(id=game_id).one()
-    date_to_edit = edited_game.release_date.date().strftime("%d/%m/%y")
-    form = CreateForm(category=edited_game.category_id)
-    if (edited_game.user_id ==
-            login_session['user_id']) or check_admin(login_session['user_id']):
+    edited_game = session.query(Games).filter_by(id=game_id).first()
+    if (edited_game is not None and (edited_game.user_id ==
+                                     login_session['user_id']
+                                     ) or check_admin(
+            login_session['user_id'])):
+        date_to_edit = edited_game.release_date.date().strftime("%d/%m/%y")
+        form = CreateForm(category=edited_game.category_id,
+                          platform=edited_game.platform)
         if request.method == 'POST':
             if form.name.data:
                 edited_game.name = normalize(form.name.data)
@@ -653,9 +656,9 @@ def delete_game(game_id):
     form = CreateForm()
     if 'username' not in login_session:
         return redirect('/login')
-    game = session.query(Games).filter_by(id=game_id).one()
-    if (game.user_id ==
-            login_session['user_id']) or check_admin(login_session['user_id']):
+    game = session.query(Games).filter_by(id=game_id).first()
+    if (game is not None and (game.user_id ==
+                              login_session['user_id']) or check_admin(login_session['user_id'])):
         if request.method == 'POST':
             session.delete(game)
             session.commit()
