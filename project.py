@@ -43,8 +43,9 @@ app = Flask(__name__)
 
 # folder to store the uploaded files
 UPLOAD_IMAGES_FOLDER = 'uploads/'
+UPLOAD_USERIMAGES_FOLDER = 'uploads/user_images/'
 app.config['UPLOAD_IMAGES_FOLDER'] = UPLOAD_IMAGES_FOLDER
-
+app.config['UPLOAD_USERIMAGES_FOLDER'] = UPLOAD_USERIMAGES_FOLDER
 # extensions allowed for uploading to prevent XSS(Cross-Site-Scripting)
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
@@ -153,7 +154,7 @@ def user_register():
         if picture and allowed_file(picture.filename):
             image_file = secure_filename(picture.filename)
             picture.save(os.path.join(
-                app.config['UPLOAD_IMAGES_FOLDER'], image_file
+                app.config['UPLOAD_USERIMAGES_FOLDER'], image_file
             ))
 
         login_session['username'] = username
