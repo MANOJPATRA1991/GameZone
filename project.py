@@ -435,7 +435,7 @@ def disconnect():
         del login_session["email"]
         del login_session["user_id"]
         flash("You have successfully been logged out.", 'success')
-        return render_template(url_for('show_categories'))
+        return redirect(url_for('show_categories'))
 
 
 # ------------------------------------------------------------
