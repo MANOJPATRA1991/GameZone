@@ -12,9 +12,7 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 
-user1 = User(name="Admin",
-			 email="admin@admin.com",
-			 admin=True)
+user1 = User(name="Admin", email="admin@admin.com", admin=True)
 session.add(user1)
 session.commit()
 

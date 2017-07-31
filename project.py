@@ -661,7 +661,8 @@ def delete_game(game_id):
         return redirect('/login')
     game = session.query(Games).filter_by(id=game_id).first()
     if (game is not None and (game.user_id ==
-                              login_session['user_id']) or check_admin(login_session['user_id'])):
+                              login_session['user_id']
+                              ) or check_admin(login_session['user_id'])):
         if request.method == 'POST':
             session.delete(game)
             session.commit()
