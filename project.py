@@ -458,8 +458,8 @@ def games_by_category_json(category_id):
 
 
 # list a particular game based on a id in json format
-@app.route('/category/<int:category_id>/games/<int:game_id>/JSON')
-def game_json(category_id, game_id):
+@app.route('/games/<int:game_id>/JSON')
+def game_json(game_id):
     game = session.query(Games).filter_by(id=game_id).one()
     return jsonify(Games=game.serialize)
 
