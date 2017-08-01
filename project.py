@@ -98,6 +98,7 @@ class CreateForm(FlaskForm):
     ])
     youtubeVideoURL = TextField("Trailer on Youtube",
                                 validators=[DataRequired()])
+
     category = SelectField('Genre',
                            choices=[('1', 'Action'),
                                     ('2', 'Action-Adventure'),
@@ -136,6 +137,7 @@ def user_register():
         password = form.password.data
         accept_tos = form.accept_tos.data
 
+        # check if fields are empty
         if username == "" or password == "" or email == "":
             flash(
                 "Arguments Missing. Make sure to enter \
@@ -196,6 +198,8 @@ def user_login():
         username = request.form['username']
         password = request.form['password']
         user = session.query(User).filter_by(name=username).first()
+
+        # verify password before creating login session
         if user and user.verify_password(password):
             login_session['username'] = user.name
             login_session['email'] = user.email
