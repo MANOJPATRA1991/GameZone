@@ -670,6 +670,14 @@ def delete_game(game_id):
         if request.method == 'POST':
             session.delete(game)
             session.commit()
+            os.remove(os.path.join(
+                app.config['UPLOAD_IMAGES_FOLDER'],
+                game.image_path
+            ))
+            os.remove(os.path.join(
+                app.config['UPLOAD_IMAGES_FOLDER'],
+                game.banner_path
+            ))
             flash('Game Data Successfully Deleted', 'success')
             return redirect(url_for('show_games'))
         else:
