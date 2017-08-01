@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+	    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+	    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+
+		<link rel=stylesheet type=text/css href="{{ url_for('static', filename='styles.css') }}">
+
+		<!-- Font Awesome -->
+		<link rel="stylesheet" href="{{url_for('static', filename='fonts/font-awesome.min.css')}}">
+
+		<!-- Bootstrap -->
+		<link rel="stylesheet" href="{{url_for('static', filename='bootstrap/css/bootstrap.min.css')}}">
+		<link rel="stylesheet" href="{{url_for('static', filename='bootstrap/js/bootstrap.min.js')}}">
+
+
+		<!-- Latest compiled and minified CSS -->
+		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jasny-bootstrap/3.1.3/css/jasny-bootstrap.min.css">
+
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/css/bootstrap-datepicker3.css"/>
+
+		{# LOAD PRE-REQUISITES FOR GOOGLE SIGN IN #}
+		{# Include the following scripts that create an anonymous function that inserts a script #}
+		{# into the DOM of this login.html web page. #}
+
+		<script src="https://apis.google.com/js/client:platform.js?onload=start" async defer>
+		</script>
+		{# END PRE-REQUISITES FOR GOOGLE SIGN IN #}
+		</script>
+	</head>
+	<body>
+		{% block content %}
+		{% endblock %}
+		<div class="footer-bottom">
+			<div class="container">
+				<div class="row">
+					<div class="col-xs-6 col-sm-6 col-md-6 col-lg-6">
+						<div class="copyright">
+							© 2017, GameZone, All rights reserved
+						</div>
+					</div>
+					<div class="col-xs-6 col-md-6 col-lg-6">
+						<div class="design">
+							 <a href="{{url_for('rest.show_categories')}}">Home </a>  |  <a href="{{url_for('rest.show_games')}}">All Games</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+		<!-- Latest compiled and minified JavaScript -->
+		<script src="//cdnjs.cloudflare.com/ajax/libs/jasny-bootstrap/3.1.3/js/jasny-bootstrap.min.js"></script>
+		<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.1/js/bootstrap-datepicker.min.js"></script>
+
+		<script>
+			$(document).ready(function(){
+			  var date_input=$('input[name="release_date"]'); //our date input has the name "date"
+			  var container=$('.bootstrap-iso form').length>0 ? $('.bootstrap-iso form').parent() : "body";
+			  var options={
+				format: 'mm/dd/yyyy',
+				container: container,
+				todayHighlight: true,
+				autoclose: true,
+			  };
+			  date_input.datepicker(options);
+			})
+
+			$('.lib-item-games:nth-child(even)').addClass('col-md-offset-2');
+
+			window.setTimeout(function() {
+			    $(".alert").fadeTo(500, 0).slideUp(500, function(){
+			        $(this).remove(); 
+			    });
+			}, 4000);
+		</script>
+	</body>
+</html>

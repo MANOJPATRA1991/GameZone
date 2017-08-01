@@ -1,0 +1,154 @@
+{% extends "main.html" %}
+{% include "header.html" %}
+{% block content %}
+    <div class="container" align="center">
+    	<div class="row login" align="center">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{category}}" role="alert" align="center">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <strong>{{ message }}</strong>
+                </div>
+                {% endfor %}
+            {% endif %}  
+        {% endwith %}
+            <div class="col-xs-12">
+                <h2>Log in with</h2>
+            </div>
+            <div class="col-xs-12" id="result"></div>
+            <div class="col-xs-12">
+                <form action="{{url_for('auth.user_login')}}" class="form-inline" method="post">
+                    <input type="text" class="form-control" placeholder = "Username" name="username">
+                    <input type="password" class="form-control" placeholder = "Password" name="password">
+                    <input class="btn btn-default" type="submit" value="Login">
+                </form>
+            </div>
+    		<div class="col-xs-12">
+    			{# GOOGLE SIGN IN #}
+                {# data-approvalprompt="force" is for debugging purposes #}
+                {# and should be disabled in production #}
+                {# redirecturi: 'postmessage' enables the one-time-code flow #}
+                {# accesstype: 'offline' means the backend server will have access to user data in the API server
+                    even when user is offline #}
+                {# cookipolicy determines the scope of the URIs to access the API server #}
+                <div id="signinButton">
+                    <span class="g-signin"
+                          data-scope="openid email"
+                          data-clientid="228365195461-l6ldkp06vi30c50eve044vv290vhqema.apps.googleusercontent.com"
+                          data-redirecturi="postmessage"
+                          data-accesstype="offline"
+                          data-cookiepolicy="single_host_origin"
+                          data-callback="signInCallback"
+                          >
+                    </span>
+                </div>
+            </div>
+            <script>
+                // callback method that handles the response that google sends back to the client
+                function signInCallback(authResult) {
+                    // check if the authResult object contains a parameter 'code' which means
+                    // authorization with the Google API server was successful
+                    if(authResult['code']){
+                    // Hide the sign-in button now that the user is authorized
+                        $('#signinButton').attr('style', 'display: none');
+                        // Send the one-time-code to the server. if the server
+                        // responds, write  a 'login successful' message
+                        // to the web page and then redirect back to the main
+                        // restaurants page
+                        $.ajax({
+                            type: 'POST',
+                            url: '/gconnect?state={{ STATE }}',
+                            // prevent response from being processed as a string
+                            processData: false,
+                            // send as an arbitrary binary stream of data formatted as Unicode
+                            contentType: 'application/octet-stream; charset=utf-8',
+                            // data to send to the server, i.e., the one-time-use code
+                            data: authResult['code'],
+                            success: function(result){
+                                if(result){
+                                    $('#result').html('</br>' + result + '</br>' +
+                                    'Redirecting...');
+                                    setTimeout(function () {
+                                        window.location.href = "/category/";
+                                    }, 4000);
+                                }else if (authResult['error']){
+                                    console.log('There was an error: ' + authResult['error']);
+                                }else {
+                                    $('#result').html('Failed to make a server-side call,' +
+                                        'Check your configuration and console.');
+                                }
+                            }
+                        });
+                    }
+                }
+            </script>
+            {# END GOOGLE SIGN IN #}
+
+
+            {# FACEBOOK SIGN IN #}
+            <script>
+                    window.fbAsyncInit = function() {
+                    FB.init({
+                        appId      : '1380078725415109',
+                        cookie     : true,
+                        xfbml      : true,
+                        version    : 'v2.8'
+                    });
+                    FB.AppEvents.logPageView();   
+                    };
+
+                    (function(d, s, id){
+                        var js, fjs = d.getElementsByTagName(s)[0];
+                        if (d.getElementById(id)) {return;}
+                        js = d.createElement(s); js.id = id;
+                        js.src = "//connect.facebook.net/en_US/sdk.js";
+                        fjs.parentNode.insertBefore(js, fjs);
+                    }(document, 'script', 'facebook-jssdk'));
+
+                // Here we run a very simple test of the Graph API after login is
+                // successful.  See statusChangeCallback() for when this call is made.
+                function sendTokenToServer() {
+                    // retrieve the short lived access token
+                    var access_token = FB.getAuthResponse()['accessToken'];
+                    console.log(access_token)
+                    console.log('Welcome!  Fetching your information.... ');
+                    FB.api('/me', function(response) {
+                        console.log('Successful login for: ' + response.name);
+                        $.ajax({
+                            type: 'POST',
+                            url: '/fbconnect?state={{STATE}}',
+                            processData: false,
+                            data: access_token,
+                            contentType: 'application/octet-stream; charset=utf-8',
+                            success: function(result) {
+                            // Handle or verify the server response if necessary.
+                                if (result) {
+                                    $('#result').html('</br>'+ result + '</br>Redirecting...')
+                                    setTimeout(function() {
+                                        window.location.href = "/category/";
+                                     }, 4000);
+                                } else {
+                                    $('#result').html('Failed to make a server-side call. Check your configuration and console.');
+                                }
+                            }
+                        });
+                    });
+                }
+            </script>
+
+
+            <div class="col-xs-12">
+                <fb:login-button size="large" scope="public_profile,email" onlogin="sendTokenToServer();">
+                    <a href='javascript:sendTokenToServer()'>Sign In</a>
+                </fb:login-button>
+            </div>
+            {# END FACEBOOK SIGN IN #}
+            <div class="col-xs-12">
+                <h2>New User? Sign Up Here</h2>
+                <a class="btn btn-primary" type="button" href="{{url_for('auth.user_register')}}">Sign Up</a>
+            </div>
+    	</div>
+    </div>
+{% endblock %}

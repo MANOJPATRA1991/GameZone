@@ -1,0 +1,66 @@
+{% extends "main.html" %}
+{% block content %}
+{% include "header.html" %}
+
+<div class="container">
+<div class="row">
+	<div class="col-xs-12" align="center">
+		<h2>{{category.name}}</h2>
+	</div>
+</div>
+</div>
+
+
+
+<div class="container">
+    <div class="row">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{category}}" role="alert" align="center">
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <strong>{{ message }}</strong>
+                </div>
+                {% endfor %}
+            {% endif %}  
+        {% endwith %}
+        <div class="col-xs-12" style="padding-top: 50px; float: none; margin: 0 auto;">
+            <div class="row">
+                {% for game in games %}
+                <div class="lib-item-games col-xs-12 col-md-5" data-category="view">
+                    <div class="lib-panel">
+                        <div class="row box-shadow">
+                            <div class="col-xs-4 col-md-4">
+                                <img class="lib-img-show" src="{{url_for('rest.uploaded_file', filename = game.image_path)}}">
+                            </div>
+                            <div class="col-xs-8 col-md-8">
+                                <div class="lib-row lib-header">
+                                    <a href="{{url_for('rest.show_game', game_id=game.id)}}">{{game.name}}</a>
+                                    {% if game.user_id == user_id or admin  %}
+                                    <div class="dropdown" style="float: right;">
+                                        <a type="button" data-toggle="dropdown"><i class="fa fa-caret-down" aria-hidden="true"></i></a>
+                                        <ul class="dropdown-menu pull-right">
+                                          <li><a href="{{url_for('rest.edit_game', game_id=game.id)}}">Edit</a></li>
+                                          <li><a href="{{url_for('rest.delete_game', game_id=game.id)}}">Delete</a></li>
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                    <div class="lib-header-seperator"></div>
+                                </div>
+                                <div class="lib-row lib-desc">
+                                    <em>Platform: </em>{{game.platform}}
+                                    <br><br>
+                                    <em>Creators: </em>{{game.creators}}
+                                    <br><br>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
