@@ -23,6 +23,10 @@ rest_api = Blueprint('rest', __name__)
 @rest_api.route('/')
 @rest_api.route('/category/')
 def show_categories():
+    """Return the rendered template for categories.
+
+    Returns: Rendered html template
+    """
     categories = session.query(Category).order_by(asc(Category.name))
     return render_template('categories.html', categories=categories)
 
@@ -31,11 +35,20 @@ def show_categories():
 @rest_api.route('/category/<int:category_id>/')
 @rest_api.route('/category/<int:category_id>/games/')
 def show_games_by_category(category_id):
+    """Return the rendered template for categories filtered by category.
+
+    Args:
+        category_id(int)
+
+    Returns: Rendered html template
+
+    """
     admin = False
     if 'username' not in login_session:
         user_id = None
     else:
         user_id = login_session['user_id']
+        # check if user is admin
         admin = check_admin(user_id)
     category = session.query(Category).filter_by(id=category_id).one()
     games = session.query(Games).filter_by(category_id=category_id).all()
@@ -47,6 +60,11 @@ def show_games_by_category(category_id):
 # show all games
 @rest_api.route('/games/')
 def show_games():
+    """Return the rendered template for games.
+
+    Returns: Rendered html template
+
+    """
     admin = False
     if 'username' not in login_session:
         user_id = None
@@ -63,6 +81,14 @@ def show_games():
 # show a game with id
 @rest_api.route('/games/<int:game_id>')
 def show_game(game_id):
+    """Return the rendered template for a game with game_id.
+
+    Args:
+        game_id(int)
+
+    Returns: Rendered html template
+
+    """
     game = session.query(Games).filter_by(id=game_id).one()
     date = game.release_date.date().strftime("%d, %B %Y")
     category = session.query(Category).filter_by(id=game.category_id).one()
@@ -76,6 +102,10 @@ def show_game(game_id):
 # Create new game data
 @rest_api.route('/games/new/', methods=['GET', 'POST'])
 def new_game():
+    """Creates a new game entry in the database.
+
+    Returns: Rendered html template or redirect url
+    """
     form = CreateForm()
     if 'username' not in login_session:
         return redirect('/login')
@@ -132,6 +162,14 @@ def new_game():
 # Edit a game's data
 @rest_api.route('/games/<int:game_id>/edit', methods=['GET', 'POST'])
 def edit_game(game_id):
+    """Allows user to edit a game.
+
+    Args:
+        game_id(int)
+
+    Returns: Rendered html template or redirect url
+
+    """
     if 'username' not in login_session:
         return redirect('/login')
     edited_game = session.query(Games).filter_by(id=game_id).first()
@@ -201,6 +239,14 @@ def edit_game(game_id):
 # Delete a game
 @rest_api.route('/games/<int:game_id>/delete', methods=['GET', 'POST'])
 def delete_game(game_id):
+    """Allows user to delete a game.
+
+    Args:
+        game_id(int)
+
+    Returns: Rendered html template or redirect url
+
+    """
     form = CreateForm()
     if 'username' not in login_session:
         return redirect('/login')
@@ -232,5 +278,13 @@ def delete_game(game_id):
 # See images on a tab in the browser
 @rest_api.route('/uploads/<path:filename>')
 def uploaded_file(filename):
+    """Allows user to view images on a new tab in the browser.
+
+    Args:
+        filename(path)
+
+    Returns: Image file
+
+    """
     return send_from_directory(app.config['UPLOAD_IMAGES_FOLDER'],
                                filename)

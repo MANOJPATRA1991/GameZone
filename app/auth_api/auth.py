@@ -16,6 +16,7 @@ from flask import (Blueprint, render_template, request, make_response,
 from werkzeug.utils import secure_filename
 
 from flask_wtf.csrf import CSRFProtect
+
 # Import module forms
 from app.auth_api.forms import RegistrationForm
 
