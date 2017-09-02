@@ -39,21 +39,6 @@ The app also has a user who acts as an admin with full access to perform CRUD op
 
 This web application is live on [GameZone](https://gamezonev2.herokuapp.com/)
 
-### REST_APIs
-
-1. `/category/JSON`
-2. `/category/<int:category_id>/games/JSON`
-3. `/games/<int:game_id>/JSON`
-4. `/games/JSON`
-5. `/category/<int:category_id>/`
-6. `/category/<int:category_id>/games/`
-7. `/games/`
-8. `/games/<int:game_id>`
-9. `/games/new/`
-10. `/games/<int:game_id>/edit`
-11. `/games/<int:game_id>/delete`
-12. `/uploads/<path:filename>`
-
 ### References
 1. [Python Documentation](https://docs.python.org/3/)
 2. [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
