@@ -1,10 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from database_setup import Base, User
+from app.models.models import Base, User
 
 # Create engine to connect to catalog database
-engine = create_engine('sqlite:///catalog.db')
+engine = create_engine('postgresql://dbuser:catalog@localhost/catalog')
 
 Base.metadata.bind = engine
 

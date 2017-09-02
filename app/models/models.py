@@ -28,7 +28,7 @@ class User(Base):
     picture = Column(String(250))
     email = Column(String(250), nullable=False)
     admin = Column(Boolean, default=False)
-    password_hash = Column(String(64))
+    password_hash = Column(String(250))
 
     def hash_password(self, password):
         self.password_hash = pwd_context.encrypt(password)
@@ -115,6 +115,7 @@ class Games(Base):
         }
 
 
-engine = create_engine('sqlite:///catalog.db')
+engine = create_engine('postgresql://dbuser:catalog@localhost/catalog')
+
 
 Base.metadata.create_all(engine)
