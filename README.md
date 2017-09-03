@@ -6,6 +6,8 @@ This web application is live on [GameZone](https://gamezonev2.herokuapp.com/).
 
 This project demonstrates my skills in developing a REST API server for a Flask web application.
 
+The project is re-configured to be served from a Linux Ubuntu 16.04 Apache2 server, with a Postgresql database.
+
 ## Table of Contents
 
   1. [Description](#description)
