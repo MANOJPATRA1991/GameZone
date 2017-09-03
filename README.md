@@ -21,7 +21,12 @@ The app also has a user who acts as an admin with full access to perform CRUD op
   
 ### Installation and Test Requirements
 
-  1. To run this project in local environment, clone it with `git clone <URL>`.
+NOTE: 1. Download the fullstack-nanodegree-vm from [here](https://github.com/udacity/fullstack-nanodegree-vm) and install the VM before proceeding further. 
+      2. Install postgresql. For instructions on how to install postgresql look [here](https://github.com/MANOJPATRA1991/Linux-Server-Configuration#install-postgresql).
+   
+ #### Set up the project for testing:
+ 
+  1. To run this project in VM environment, clone it with `git clone <URL>`.
   
   2. Run your vagrant machine with `vagrant up` and then `vagrant ssh`.
   
@@ -29,13 +34,13 @@ The app also has a user who acts as an admin with full access to perform CRUD op
   
   4. **cd** into the project directory.
   
-  3. Create the database with `python database_setup.py`
+  5. Create the database with `python database_setup.py`
   
-  4. Populate the database with categories and admin user by `python categories.py` and `python demo_user.py`.
+  6. Populate the database with categories and admin user by `python categories.py` and `python demo_user.py`.
   
-  5. To run the application in your local environment, the command is `python run.py`.
+  7. To run the application in your local environment, the command is `python run.py`.
   
-  6. Once the server is up and running go to `http://localhost:8000` from your browser to view the app.
+  8. Once the server is up and running go to `http://localhost:8000` from your browser to view the app.
 
 ### References
 1. [Python Documentation](https://docs.python.org/3/)
