@@ -18,8 +18,6 @@ This project demonstrates my skills in developing a REST API server for a Flask 
 This project titled GameZone displays games for certain pre-defined categories to a user. 
 If the user is logged in, he/she can create new game data and edit their own data if needed.
 The app also has a user who acts as an admin with full access to perform CRUD operations on the database for improvement.
-
-This web application is live on [GameZone](https://gamezonev2.herokuapp.com/)
   
 ### Installation and Test Requirements
 
