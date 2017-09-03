@@ -2,17 +2,26 @@
 
 This is the second project of Part 3, Core Curriculum, [Full Stack Web Developer Nanodegree Program](https://in.udacity.com/course/full-stack-web-developer-nanodegree--nd004/). 
 
-This web application is live on [GameZone](https://gamezonev2.herokuapp.com/)
+This web application is live on [GameZone](https://gamezonev2.herokuapp.com/).
+
+This project demonstrates my skills in developing a REST API server for a Flask web application.
 
 ## Table of Contents
 
-  1. [Installation](#installation)
-  2. [Description](#description)
-  3. [REST APIs](#rest_apis)
-  4. [References](#references)
-  5. [License](#license)
+  1. [Description](#description)
+  2. [Installation and Test Requirements](#installation)
+  3. [References](#references)
+  4. [License](#license)
   
-### Installation
+### Description
+
+This project titled GameZone displays games for certain pre-defined categories to a user. 
+If the user is logged in, he/she can create new game data and edit their own data if needed.
+The app also has a user who acts as an admin with full access to perform CRUD operations on the database for improvement.
+
+This web application is live on [GameZone](https://gamezonev2.herokuapp.com/)
+  
+### Installation and Test Requirements
 
   1. To run this project in local environment, clone it with `git clone <URL>`
   
@@ -29,15 +38,6 @@ This web application is live on [GameZone](https://gamezonev2.herokuapp.com/)
   5. To run the application in your local environment, the command is `python project.py`
   
   6. Once the server is up and running go to `http://localhost:8000` from your browser to view the app.
-
-
-### Description
-
-This project titled GameZone displays games for certain pre-defined categories to a user. 
-If the user is logged in, he/she can create new game data and edit their own data if needed.
-The app also has a user who acts as an admin with full access to perform CRUD operations on the database for improvement.
-
-This web application is live on [GameZone](https://gamezonev2.herokuapp.com/)
 
 ### References
 1. [Python Documentation](https://docs.python.org/3/)
