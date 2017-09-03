@@ -21,7 +21,7 @@ The app also has a user who acts as an admin with full access to perform CRUD op
   
 ### Installation and Test Requirements
 
-  1. To run this project in local environment, clone it with `git clone <URL>`
+  1. To run this project in local environment, clone it with `git clone <URL>`.
   
   2. Run your vagrant machine with `vagrant up` and then `vagrnt ssh`.
   
@@ -31,9 +31,9 @@ The app also has a user who acts as an admin with full access to perform CRUD op
   
   3. Create the database with `python database_setup.py`
   
-  4. Populate the database with categories and admin user by `python categories.py` and `python demo_users.py`
+  4. Populate the database with categories and admin user by `python categories.py` and `python demo_user.py`.
   
-  5. To run the application in your local environment, the command is `python project.py`
+  5. To run the application in your local environment, the command is `python run.py`.
   
   6. Once the server is up and running go to `http://localhost:8000` from your browser to view the app.
 
