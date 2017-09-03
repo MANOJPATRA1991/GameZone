@@ -23,7 +23,7 @@ The app also has a user who acts as an admin with full access to perform CRUD op
 
   1. To run this project in local environment, clone it with `git clone <URL>`.
   
-  2. Run your vagrant machine with `vagrant up` and then `vagrnt ssh`.
+  2. Run your vagrant machine with `vagrant up` and then `vagrant ssh`.
   
   3. Once done, open the project in your favorite IDE and install the dependencies mentioned in **requirements.txt** using `sudo pip install <module>` in your vagrant environment.
   
