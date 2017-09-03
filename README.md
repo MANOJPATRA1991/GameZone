@@ -11,7 +11,7 @@ The project is re-configured to be served from a Linux Ubuntu 16.04 Apache2 serv
 ## Table of Contents
 
   1. [Description](#description)
-  2. [Installation and Test Requirements](#installation)
+  2. [Installation and Test Requirements](#installation-and-test-requirements)
   3. [References](#references)
   4. [License](#license)
   
